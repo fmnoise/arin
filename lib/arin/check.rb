@@ -33,16 +33,23 @@ module Arin
       end
 
       def query
-        subqueries = []
-        classes.each do |klass|
-          klass.reflect_on_all_associations(:belongs_to).each do |relation|
-            q = relation_query(klass, relation) rescue nil
-            subqueries << q if q && processable?(klass, relation)
-          end
-        end
-        subqueries.join <<-SQL
+        queries.join <<-SQL
           UNION ALL
         SQL
+      end
+
+      def queries
+        [].tap do |qs|
+          classes.each do |klass|
+            klass.reflect_on_all_associations(:belongs_to).each do |relation|
+              begin
+                qs << relation_query(klass, relation) if processable?(klass, relation)
+              rescue StandardError => e
+                handle_query_failure(klass, relation, e)
+              end
+            end
+          end
+        end
       end
 
       def processable?(klass, relation)
@@ -63,6 +70,10 @@ module Arin
           WHERE r.#{relation.association_primary_key} IS NULL
             AND t.#{relation.foreign_key} IS NOT NULL
         SQL
+      end
+
+      def handle_query_failure(klass, relation, e)
+        warn("Cannot process <#{relation}> relation for <#{klass}>: #{e.message}")
       end
   end
 end
