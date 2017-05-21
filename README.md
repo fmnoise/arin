@@ -82,7 +82,8 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-*The main idea behind Arin development is to stay as small and unopinionated as possible*
+**The main idea behind Arin development is to stay as small and unopinionated as possible**
+
 Bug reports and pull requests are welcome on GitHub at https://github.com/fmnoise/arin.
 
 ## License
