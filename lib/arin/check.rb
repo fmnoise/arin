@@ -111,7 +111,7 @@ module Arin
       end
 
       def polymorphics(klass, relation)
-        klass.pluck(relation.foreign_type).uniq
+        klass.pluck(relation.foreign_type).uniq.compact
       end
 
       def is_polymorphic?(relation)
