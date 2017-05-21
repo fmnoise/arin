@@ -22,21 +22,21 @@ Or install it yourself as:
 
 Consider the example: Order belongs to User which doesn't exist anymore.
 
-In order to find models of certain class which points to non-existant entities we need to pass class contant to constructor
+In order to find models of certain class which points to non-existant entities we need to pass class constant to constructor:
 ```ruby
 Arin::Check.new(Order).issues
 
 # callable object style
 Arin::Check.(Order)
 ```
-Multiple classes should be passed as array
+Multiple classes should be passed as array:
 ```ruby
 Arin::Check.new([Payment, Order]).issues
 
 # callable object style
 Arin::Check.([Payment, Order])
 ```
-Omit parameters to check all loaded models
+Omit parameters to check all loaded models:
 ```ruby
 Rails.application.eager_load!
 Arin::Check.new.issues
@@ -45,9 +45,16 @@ Arin::Check.new.issues
 Arin::Check.()
 ```
 
-Working with found issues collection which is simple array of `Arin::Issue` instances
+Working with found issues collection which is simple array of `Arin::Issue` instances:
 ```ruby
-issue = Arin::Check.().first
+issues = Arin::Check.()
+
+# getting stats
+issues.group_by(&:class_name).map{ |k,v| Hash[k, v.size] }
+=> [{"Order"=>3}, {"Payment"=>2}]
+
+# getting issue info
+issue = issues.first
 => #<Arin::Issue:0x007f9fe2823af0
  @class_name="Order",
  @id=6789,
@@ -66,6 +73,7 @@ issue.relation_class
 issue.relation_id
 => 4567
 
+# getting reported object
 issue.object
 => #<Order:0x007f9fdfbd9af8
   id: 6789,
