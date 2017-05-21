@@ -73,7 +73,7 @@ module Arin
       end
 
       def handle_query_failure(klass, relation, e)
-        warn("Cannot process <#{relation}> relation for <#{klass}>: #{e.message}")
+        warn("Cannot process #{relation.name} relation for #{klass}: #{e.message}")
       end
   end
 end
