@@ -66,8 +66,7 @@ module Arin
       def processable?(klass, relation)
         klass.table_exists? &&
         klass.primary_key &&
-        klass.column_names.include?(relation.foreign_key) &&
-        relation.klass
+        klass.column_names.include?(relation.foreign_key)
       end
 
       def relation_query(klass, relation)
