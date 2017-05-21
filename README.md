@@ -7,7 +7,7 @@ Arin - ActiveRecord integrity checking tool
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'arin', github: 'fmnoise/arin'
+gem 'arin'
 ```
 
 And then execute:
