@@ -1,6 +1,6 @@
 # Arin
 
-Arin - ActiveRecord intergity checking tool
+Arin - ActiveRecord integrity checking tool
 
 ## Installation
 

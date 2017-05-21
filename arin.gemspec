@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = Arin::VERSION
   spec.authors       = ["fmnoise@gmail.com"]
   spec.email         = ["fmnoise@gmail.com"]
-  spec.summary       = "ActiveRecord Intergity checking tool"
+  spec.summary       = "ActiveRecord Integrity checking tool"
   spec.license       = "MIT"
 
   spec.files = Dir['lib/**/*.rb'] + Dir['bin/*']
