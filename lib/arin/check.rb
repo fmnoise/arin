@@ -43,7 +43,18 @@ module Arin
           classes.each do |klass|
             klass.reflect_on_all_associations(:belongs_to).each do |relation|
               begin
-                qs << relation_query(klass, relation) if processable?(klass, relation)
+                if is_polymorphic?(relation)
+                  polymorphics(klass, relation).each do |poly|
+                    poly_class = poly.safe_constantize
+                    if poly_class
+                      qs << polymorphic_relation_query(klass, relation, poly_class)
+                    else
+                      qs << broken_polymorchic_class_query(klass, relation, poly)
+                    end
+                  end
+                else
+                  qs << relation_query(klass, relation) if processable?(klass, relation)
+                end
               rescue StandardError => e
                 handle_query_failure(klass, relation, e)
               end
@@ -55,7 +66,8 @@ module Arin
       def processable?(klass, relation)
         klass.table_exists? &&
         klass.primary_key &&
-        klass.column_names.include?(relation.foreign_key)
+        klass.column_names.include?(relation.foreign_key) &&
+        relation.klass
       end
 
       def relation_query(klass, relation)
@@ -70,6 +82,40 @@ module Arin
           WHERE r.#{relation.association_primary_key} IS NULL
             AND t.#{relation.foreign_key} IS NOT NULL
         SQL
+      end
+
+      def polymorphic_relation_query(klass, relation, relation_class)
+        <<-SQL
+          SELECT "#{klass.name}" AS class_name,
+            t.#{klass.primary_key} AS id,
+            "#{relation_class}" AS relation_class,
+            t.#{relation.foreign_key} AS relation_id
+          FROM #{klass.table_name} AS t
+          LEFT JOIN #{relation_class.table_name} AS r
+            ON t.#{relation.foreign_key} = r.#{relation_class.primary_key}
+            AND t.#{relation.foreign_type} = "#{relation_class}"
+          WHERE r.#{relation_class.primary_key} IS NULL
+            AND t.#{relation.foreign_key} IS NOT NULL
+        SQL
+      end
+
+      def broken_polymorphic_class_query(klass, relation, relation_class)
+        <<-SQL
+          SELECT "#{klass.name}" AS class_name,
+            t.#{klass.primary_key} AS id,
+            "#{relation_class}" AS relation_class,
+            t.#{relation.foreign_key} AS relation_id
+          FROM #{klass.table_name} AS t
+          WHERE t.#{relation.foreign_type} = "#{relation_class}"
+        SQL
+      end
+
+      def polymorphics(klass, relation)
+        klass.pluck(relation.foreign_type).uniq
+      end
+
+      def is_polymorphic?(relation)
+        relation.options[:polymorphic]
       end
 
       def handle_query_failure(klass, relation, e)
