@@ -74,6 +74,10 @@ issue.object
   updated_at: Sun, 20 Jun 2017 20:06:36 UTC +00:00>
 ```
 
+## TODO
+
+Add tests
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
