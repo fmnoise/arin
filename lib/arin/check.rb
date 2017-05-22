@@ -33,92 +33,104 @@ module Arin
       end
 
       def query
-        queries.join <<-SQL
+        queries.compact.join <<-SQL
           UNION ALL
         SQL
       end
 
       def queries
-        [].tap do |qs|
-          classes.each do |klass|
-            klass.reflect_on_all_associations(:belongs_to).each do |relation|
-              begin
-                if is_polymorphic?(relation)
-                  polymorphics(klass, relation).each do |poly|
-                    poly_class = poly.safe_constantize
-                    if poly_class
-                      qs << polymorphic_relation_query(klass, relation, poly_class)
-                    else
-                      qs << broken_polymorchic_class_query(klass, relation, poly)
-                    end
-                  end
-                else
-                  qs << relation_query(klass, relation) if processable?(klass, relation)
-                end
-              rescue StandardError => e
-                handle_query_failure(klass, relation, e)
-              end
-            end
+        classes.reduce([]) do |qs, klass|
+          qs.push(*class_queries(klass))
+        end
+      end
+
+      def class_queries klass
+        associations_for(klass).reduce([]) do |qs, assoc|
+          qs.push(*association_queries(assoc, klass))
+        end
+      end
+
+      def association_queries assoc, klass
+        if is_polymorphic?(assoc)
+          polymorphic_association_queries(assoc, klass)
+        else
+          association_query(assoc, klass) if processable?(assoc, klass)
+        end
+      rescue StandardError => e
+        handle_query_failure(assoc, klass, e)
+      end
+
+      def polymorphic_association_queries assoc, klass
+        polymorphics(assoc, klass).map do |poly_class_name|
+          poly_class = poly_class_name.safe_constantize
+          if poly_class
+            polymorphic_association_query(assoc, klass, poly_class)
+          else
+            broken_polymorchic_class_query(assoc, klass, poly_class_name)
           end
         end
       end
 
-      def processable?(klass, relation)
+      def associations_for klass
+        klass.reflect_on_all_associations(:belongs_to)
+      end
+
+      def processable?(assoc, klass)
         klass.table_exists? &&
         klass.primary_key &&
-        klass.column_names.include?(relation.foreign_key)
+        klass.column_names.include?(assoc.foreign_key)
       end
 
-      def relation_query(klass, relation)
+      def association_query(assoc, klass)
         <<-SQL
           SELECT "#{klass.name}" AS class_name,
             t.#{klass.primary_key} AS id,
-            "#{relation.class_name}" AS relation_class,
-            t.#{relation.foreign_key} AS relation_id
+            "#{assoc.class_name}" AS relation_class,
+            t.#{assoc.foreign_key} AS relation_id
           FROM #{klass.table_name} AS t
-          LEFT JOIN #{relation.table_name} AS r
-            ON t.#{relation.foreign_key} = r.#{relation.association_primary_key}
-          WHERE r.#{relation.association_primary_key} IS NULL
-            AND t.#{relation.foreign_key} IS NOT NULL
+          LEFT JOIN #{assoc.table_name} AS r
+            ON t.#{assoc.foreign_key} = r.#{assoc.association_primary_key}
+          WHERE r.#{assoc.association_primary_key} IS NULL
+            AND t.#{assoc.foreign_key} IS NOT NULL
         SQL
       end
 
-      def polymorphic_relation_query(klass, relation, relation_class)
+      def polymorphic_association_query(assoc, klass, assoc_class)
         <<-SQL
           SELECT "#{klass.name}" AS class_name,
             t.#{klass.primary_key} AS id,
-            "#{relation_class}" AS relation_class,
-            t.#{relation.foreign_key} AS relation_id
+            "#{assoc_class}" AS relation_class,
+            t.#{assoc.foreign_key} AS relation_id
           FROM #{klass.table_name} AS t
-          LEFT JOIN #{relation_class.table_name} AS r
-            ON t.#{relation.foreign_key} = r.#{relation_class.primary_key}
-            AND t.#{relation.foreign_type} = "#{relation_class}"
-          WHERE r.#{relation_class.primary_key} IS NULL
-            AND t.#{relation.foreign_key} IS NOT NULL
+          LEFT JOIN #{assoc_class.table_name} AS r
+            ON t.#{assoc.foreign_key} = r.#{assoc_class.primary_key}
+            AND t.#{assoc.foreign_type} = "#{assoc_class}"
+          WHERE r.#{assoc_class.primary_key} IS NULL
+            AND t.#{assoc.foreign_key} IS NOT NULL
         SQL
       end
 
-      def broken_polymorphic_class_query(klass, relation, relation_class)
+      def broken_polymorphic_class_query(assoc, klass, assoc_class_name)
         <<-SQL
           SELECT "#{klass.name}" AS class_name,
             t.#{klass.primary_key} AS id,
-            "#{relation_class}" AS relation_class,
-            t.#{relation.foreign_key} AS relation_id
+            "#{assoc_class}" AS relation_class,
+            t.#{assoc.foreign_key} AS relation_id
           FROM #{klass.table_name} AS t
-          WHERE t.#{relation.foreign_type} = "#{relation_class}"
+          WHERE t.#{assoc.foreign_type} = "#{assoc_class_name}"
         SQL
       end
 
-      def polymorphics(klass, relation)
-        klass.pluck(relation.foreign_type).uniq.compact
+      def polymorphics(assoc, klass)
+        klass.pluck(assoc.foreign_type).uniq.compact
       end
 
-      def is_polymorphic?(relation)
-        relation.options[:polymorphic]
+      def is_polymorphic?(assoc)
+        assoc.options[:polymorphic]
       end
 
-      def handle_query_failure(klass, relation, e)
-        warn("Cannot process #{relation.name} relation for #{klass}: #{e.message}")
+      def handle_query_failure(assoc, klass, e)
+        warn("Cannot process #{assoc.name} relation for #{klass}: #{e.message}")
       end
   end
 end
