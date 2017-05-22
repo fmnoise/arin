@@ -10,6 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["fmnoise@gmail.com"]
   spec.summary       = "ActiveRecord Integrity checking tool"
   spec.license       = "MIT"
+  spec.homepage      = "https://github.com/fmnoise/arin"
 
   spec.files = Dir['lib/**/*.rb'] + Dir['bin/*']
   spec.files += Dir['[A-Z]*'] + Dir['spec/**/*']
