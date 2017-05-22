@@ -104,9 +104,9 @@ module Arin
           FROM #{klass.table_name} AS t
           LEFT JOIN #{assoc_class.table_name} AS r
             ON t.#{assoc.foreign_key} = r.#{assoc_class.primary_key}
-            AND t.#{assoc.foreign_type} = "#{assoc_class}"
           WHERE r.#{assoc_class.primary_key} IS NULL
             AND t.#{assoc.foreign_key} IS NOT NULL
+            AND t.#{assoc.foreign_type} = "#{assoc_class}"
         SQL
       end
 
