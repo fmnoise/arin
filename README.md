@@ -45,11 +45,12 @@ Arin::Check.new.issues
 Arin::Check.()
 ```
 
-Working with found issues collection which is simple array of `Arin::Issue` instances:
+Working with found issues:
 ```ruby
 issues = Arin::Check.()
 
-# getting stats
+# issues is just an array of `Arin::Issue` instances
+# so getting stats is simple
 issues.group_by(&:class_name).map{ |k,v| Hash[k, v.size] }
 => [{"Order"=>3}, {"Payment"=>2}]
 
